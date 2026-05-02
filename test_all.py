@@ -4,6 +4,8 @@ Tests Huffman, LZW, and Channel Bonus on 3 file types.
 Run: python test_all.py
 """
 
+DIV = "-" * 60
+
 import os
 import sys
 import time
@@ -13,7 +15,7 @@ import tracemalloc
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from algorithms import huffman, lzw, channel
-from utils.entropy import calculate_entropy, get_file_stats
+from utils.entropy import calculate_entropy
 
 TEST_DIR = os.path.join(os.path.dirname(__file__), "test_files")
 OUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
@@ -67,7 +69,7 @@ def create_test_files():
 
 
 def run_test(name, src_path, alg_name, alg_mod, ext):
-    print(f"\n  [{alg_name}] → {name}")
+    print(f"\n  [{alg_name}] -> {name}")
     comp_path   = os.path.join(OUT_DIR, os.path.basename(src_path) + ext)
     decomp_path = os.path.join(OUT_DIR, os.path.basename(src_path) + "_decompressed" + os.path.splitext(src_path)[1])
 
@@ -76,14 +78,14 @@ def run_test(name, src_path, alg_name, alg_mod, ext):
     # Compress
     tracemalloc.start()
     t0 = time.perf_counter()
-    stats_c = alg_mod.compress(src_path, comp_path)
+    _ = alg_mod.compress(src_path, comp_path)
     t_comp = time.perf_counter() - t0
     _, peak_mem = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 
     # Decompress
     t0 = time.perf_counter()
-    stats_d = alg_mod.decompress(comp_path, decomp_path)
+    _ = alg_mod.decompress(comp_path, decomp_path)
     t_decomp = time.perf_counter() - t0
 
     # Verify lossless
@@ -103,7 +105,7 @@ def run_test(name, src_path, alg_name, alg_mod, ext):
     print(f"    Compress Time    : {t_comp*1000:.2f} ms")
     print(f"    Decompress Time  : {t_decomp*1000:.2f} ms")
     print(f"    Peak Memory      : {peak_mem/1024:.1f} KB")
-    print(f"    Lossless Check   : {'✅ PASS' if ok else '❌ FAIL'}")
+    print(f"    Lossless Check   : {'PASS' if ok else 'FAIL'}")
 
     return {
         'orig_size': orig_size, 'comp_size': comp_size,
@@ -125,7 +127,7 @@ def run_bonus(src_path):
 
     for ber in [0.001, 0.01]:
         print(f"\n    BER = {ber}")
-        enc_s = channel.encode_for_transmission(comp_path, enc_path)
+        _ = channel.encode_for_transmission(comp_path, enc_path)
         ch_s  = channel.simulate_transmission(enc_path, noisy_path, ber, seed=42)
         fix_s = channel.decode_after_transmission(noisy_path, fixed_path)
         try:
@@ -133,28 +135,28 @@ def run_bonus(src_path):
             ok = open(src_path,'rb').read() == open(recover_path,'rb').read()
             print(f"    Bits flipped     : {ch_s['bits_flipped']}")
             print(f"    Errors corrected : {fix_s['errors_corrected']}")
-            print(f"    Recovery         : {'✅ SUCCESS' if ok else '⚠️  PARTIAL'}")
+            print(f"    Recovery         : {'SUCCESS' if ok else 'PARTIAL'}")
         except Exception as e:
-            print(f"    Recovery         : ❌ FAILED ({e})")
+            print(f"    Recovery         : FAILED ({e})")
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  ECU Information Theory — Compression Project Test Suite")
+    print("  ECU Information Theory - Compression Project Test Suite")
     print("=" * 60)
 
     files = create_test_files()
 
     for file_name, file_path in files.items():
-        print(f"\n{'─'*60}")
+        print(f"\n{DIV}")
         print(f"  FILE: {file_name} ({os.path.getsize(file_path):,} bytes)")
-        print(f"{'─'*60}")
+        print(DIV)
         run_test(file_name, file_path, "Huffman", huffman, ".huf")
         run_test(file_name, file_path, "LZW",     lzw,     ".lzw")
 
-    print(f"\n{'─'*60}")
+    print(f"\n{DIV}")
     print("  BONUS: Noisy Channel + Hamming Error Correction")
-    print(f"{'─'*60}")
+    print(DIV)
     text_path = list(files.values())[0]
     run_bonus(text_path)
 

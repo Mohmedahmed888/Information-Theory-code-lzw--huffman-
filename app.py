@@ -4,12 +4,12 @@ Run: python app.py
 Then open: http://localhost:5000
 """
 
-import os, sys, time, tracemalloc, json, tempfile  # stdlib utilities used across the API
+import os, sys, time, tracemalloc  # stdlib utilities used across the API
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # allow importing local packages when run directly
 
 from flask import Flask, request, jsonify, send_file
 from algorithms import huffman, lzw, channel  # compression algorithms + bonus channel pipeline
-from utils.entropy import calculate_entropy, get_file_stats  # entropy/statistics helpers (entropy used in API response)
+from utils.entropy import calculate_entropy  # entropy/statistics helpers (entropy used in API response)
 
 app = Flask(__name__)  # Flask application instance
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')  # where uploaded inputs are stored
@@ -172,6 +172,12 @@ if __name__ == '__main__':
     t.start()
     # Avoid UnicodeEncodeError on some Windows consoles (cp1252).
     print("\nECU Compression Tool")
-    print("Open: http://localhost:5000")
+    bind_host = os.environ.get('FLASK_HOST', '127.0.0.1')  # set FLASK_HOST=0.0.0.0 for Docker / LAN demos
+    print(f"Listening on http://{bind_host}:5000")
     print("Live reload: ON — saving index.html reloads automatically\n")
-    app.run(debug=False, port=5000, use_reloader=False)  # disable Flask reloader (we use our own ping-based reload)
+    app.run(
+        debug=False,
+        host=bind_host,
+        port=int(os.environ.get('FLASK_PORT', '5000')),
+        use_reloader=False,
+    )  # disable Flask reloader (we use our own ping-based reload)

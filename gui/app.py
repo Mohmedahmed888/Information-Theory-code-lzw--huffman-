@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from algorithms import huffman, lzw, channel
-from utils.entropy import calculate_entropy_from_file, get_file_stats
+from utils.entropy import calculate_entropy_from_file
 
 
 # ─── Color Palette ───────────────────────────
@@ -278,7 +278,8 @@ class CompressionApp(tk.Tk):
         try:
             self._do_run()
         except Exception as e:
-            self.after(0, lambda: self._log(f"\n❌ ERROR: {e}\n", "red"))
+            # Default-arg captures exception text; plain `lambda: ... {e}` would be wrong on idle.
+            self.after(0, lambda msg=str(e): self._log(f"\n❌ ERROR: {msg}\n", "red"))
             self.after(0, self.progress.stop)
 
     def _do_run(self):
@@ -353,13 +354,13 @@ class CompressionApp(tk.Tk):
         if mode == "compress" and self.use_channel.get():
             self._run_channel_bonus(out_path, alg_mod)
 
-        self._log(f"✅  Done!\n", "green")
+        self._log("✅  Done!\n", "green")
         self.after(0, self.progress.stop)
 
     def _run_channel_bonus(self, compressed_path: str, alg_mod):
         ber = self.ber_var.get()
         self._log(f"\n{'─'*55}\n", "dim")
-        self._log(f"  📡 BONUS: Noisy Channel Simulation\n", "yellow")
+        self._log("  📡 BONUS: Noisy Channel Simulation\n", "yellow")
         self._log(f"  Bit Error Rate (BER): {ber:.4f}\n")
 
         enc_path    = compressed_path + ".hamming"
@@ -384,7 +385,7 @@ class CompressionApp(tk.Tk):
         # Step 4: Decompress corrected file
         try:
             alg_mod.decompress(fixed_path, recover_path)
-            self._log(f"  ✅ Recovery Success! File decompressed correctly.\n", "green")
+            self._log("  ✅ Recovery Success! File decompressed correctly.\n", "green")
         except Exception as e:
             self._log(f"  ❌ Recovery failed: {e}\n", "red")
 

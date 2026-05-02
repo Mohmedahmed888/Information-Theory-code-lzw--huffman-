@@ -8,7 +8,6 @@ Pipeline:
 
 import random  # pseudo-random bit flips for BSC simulation
 import struct  # pack/unpack fixed-size header fields
-import os      # (kept for parity; may be useful for size checks)
 
 
 # ─────────────────────────────────────────────

@@ -52,6 +52,19 @@ body {
   flex-direction:column;
 }
 
+/* Local development notice (production should use WSGI + HTTPS) */
+.dev-banner {
+  flex-shrink: 0;
+  padding: 8px 20px;
+  background: rgba(243,156,18,0.14);
+  border-bottom: 1px solid rgba(243,156,18,0.35);
+  color: var(--yellow);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  text-align: center;
+  line-height: 1.35;
+}
+
 /* ─── HEADER ─── */
 header {
   flex-shrink:0; height:58px;
@@ -399,6 +412,10 @@ input[type=range] { width:100%; accent-color:var(--yellow); cursor:pointer; }
 </style>
 </head>
 <body>
+
+<div class="dev-banner" role="status">
+  Development server — for local demos only. Do not expose Flask directly to the public internet without a hardened production stack (WSGI, reverse proxy, TLS).
+</div>
 
 <!-- HEADER -->
 <header>

@@ -1,0 +1,17 @@
+.git
+.github
+__pycache__
+*.pyc
+.venv
+venv
+uploads/
+output/
+test_files/**/*.hamming
+test_files/**/*.noisy
+test_files/**/*.fixed
+test_files/**/*.recovered
+**/._*
+.idea
+.vscode
+*.md
+!README.md

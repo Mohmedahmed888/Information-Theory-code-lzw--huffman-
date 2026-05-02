@@ -4,6 +4,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-/actions/workflows/ci.yml">
+    <img src="https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-/actions/workflows/ci.yml/badge.svg" alt="GitHub Actions CI"/>
+  </a>
   <img src="https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white" alt="Python 3.8+"/>
   <img src="https://img.shields.io/badge/flask-3.x-green?logo=flask&logoColor=white" alt="Flask"/>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"/>
@@ -38,6 +41,11 @@ Supporting components include **Shannon entropy** analysis (`utils/entropy.py`),
 - [File formats](#file-formats)
 - [Project layout](#project-layout)
 - [Testing](#testing)
+- [Continuous integration](#continuous-integration)
+- [Docker (web UI)](#docker-web-ui)
+- [Screenshots & documentation bundle](#screenshots--documentation-bundle)
+- [Suggested GitHub topics](#suggested-github-topics)
+- [Releases](#releases)
 - [Notes on compression limits](#notes-on-compression-limits)
 - [Security (development server)](#security-development-server)
 - [License](#license)
@@ -182,7 +190,13 @@ Binary layout (big-endian integers where applicable):
 ├── run.bat                # Windows menu launcher
 ├── requirements.txt       # Web dependency pin (Flask)
 ├── LICENSE                # MIT
-├── test_all.py            # Automated tests
+├── pyproject.toml         # pytest + ruff tooling config
+├── requirements-dev.txt   # pytest / ruff (CI & local dev)
+├── Dockerfile             # Containerized Flask web demo
+├── .github/workflows/     # CI pipeline
+├── test_all.py            # Integration-style scripted tests
+├── tests/                  # pytest unit tests
+├── docs/                   # REPORT, release notes, policies, screenshot folder
 ├── create_test_files.py   # Sample data helper
 ├── algorithms/
 │   ├── huffman.py         # Huffman codec
@@ -204,11 +218,88 @@ Runtime directories `output/` and `uploads/` are created by the application and 
 
 ## Testing
 
+### Integration / demo suite
+
 ```bash
 python test_all.py
 ```
 
-The suite exercises **compress → decompress** round-trips (integrity via hashing), reports ratios and timing, and includes **channel bonus** scenarios where configured.
+Runs multi-file demos, prints throughput-style metrics (via `tracemalloc`), verifies **lossless** integrity with MD5, and executes the noisy-channel bonus harness.
+
+### Unit tests (pytest + ruff for developers)
+
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest tests/ -v
+```
+
+---
+
+## Continuous integration
+
+GitHub Actions workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executes on pushes/PRs to `main`:
+
+1. **`ruff check .`** — static diagnostics on Python sources (optional PyQt prototype `gui/main_app.py` excluded to avoid heavyweight optional-deps noise)  
+2. **`pytest tests/`** — fast codec + entropy regressions  
+3. **`python test_all.py`** — scripted integration sweep
+
+Badge status is shown near the top of this README once Actions have run successfully on GitHub.
+
+---
+
+## Docker (web UI)
+
+Minimal image that serves **only** the Flask application (algorithms/utils/web assets copied in).
+
+```bash
+docker build -t compression-web .
+docker run --rm -p 5000:5000 compression-web
+# Browse http://127.0.0.1:5000
+```
+
+Environment knobs:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `FLASK_HOST` | `127.0.0.1` locally / `0.0.0.0` inside Docker image | Listen address |
+| `FLASK_PORT` | `5000` | TCP port |
+
+---
+
+## Screenshots & documentation bundle
+
+Structured artifacts live under **`docs/`**:
+
+| Path | Role |
+|------|------|
+| [`docs/REPORT.md`](docs/REPORT.md) | Long-form theory + architecture narrative (adapt for PDF submissions) |
+| [`docs/screenshots/README.md`](docs/screenshots/README.md) | Where to drop PNG captures for README / slides |
+| [`docs/ACADEMIC_POLICY.md`](docs/ACADEMIC_POLICY.md) | Guidance on plagiarism / institutional policies |
+| [`docs/RELEASE_NOTES_v1.0.0.md`](docs/RELEASE_NOTES_v1.0.0.md) | Human changelog for tagging |
+
+The web SPA now shows an amber **development-server banner** reminding users Flask is **not production-hardened** by itself.
+
+---
+
+## Suggested GitHub topics
+
+GitHub Topics must be toggled manually in the repository **About** settings. Paste a subset (pick ~5–10) such as:
+
+`python`, `flask`, `information-theory`, `huffman-coding`, `lzw`, `lossless-compression`, `education`, `tkinter`, `hamming-code`, `data-compression`
+
+---
+
+## Releases
+
+Create an annotated milestone after CI is green:
+
+```bash
+git tag -a v1.0.0 -m "v1.0.0 coursework bundle"
+git push origin v1.0.0
+```
+
+Release notes draft: [`docs/RELEASE_NOTES_v1.0.0.md`](docs/RELEASE_NOTES_v1.0.0.md)
 
 ---
 

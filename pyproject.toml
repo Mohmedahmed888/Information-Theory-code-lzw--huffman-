@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "compression-toolkit"
+version = "1.0.0"
+description = "Educational Huffman & LZW compression toolkit (GUI + Flask web)."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "Mohmedahmed888" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --tb=short"
+
+[tool.ruff]
+target-version = "py38"
+line-length = 120
+src = ["algorithms", "utils", "gui", "tests", "."]
+exclude = [
+    ".venv",
+    "test_files",
+    "uploads",
+    "output",
+    "assets",
+    # Optional heavyweight PyQt prototype (heavy optional deps); standard GUI is gui/app.py
+    "gui/main_app.py",
+]
+
+[tool.ruff.lint]
+# Keep CI conservative: catches real bugs without forcing a giant style refactor.
+select = ["E9", "F"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"app.py" = []
