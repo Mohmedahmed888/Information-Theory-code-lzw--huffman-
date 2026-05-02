@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECU — Compression Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Softer neutral dark palette */
+  --bg:       #111318;
+  --bg2:      #16191F;
+  --surface:  #1C2028;
+  --card:     #222630;
+  --card2:    #272C38;
+  --border:   #2E3340;
+  --border2:  #3A4050;
+
+  /* ECU Red — used sparingly as accent only */
+  --red:      #C0392B;
+  --red-s:    #E74C3C;
+  --red-dim:  rgba(192,57,43,0.12);
+  --red-glow: rgba(192,57,43,0.2);
+
+  /* Comfortable text sizes */
+  --text:     #E8EAF0;
+  --text2:    #9BA3B8;
+  --text3:    #565E78;
+
+  /* Status colors */
+  --green:    #27AE60;
+  --green-s:  #2ECC71;
+  --yellow:   #F39C12;
+  --blue:     #2980B9;
+  --blue-s:   #3498DB;
+
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --r: 10px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14px;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ─── HEADER ─── */
+header {
+  flex-shrink:0; height:58px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+header::after {
+  content:'';
+  position:absolute; bottom:-1px; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--red), transparent);
+  opacity:0.5;
+}
+
+.hdr-left { display:flex; align-items:center; gap:16px; }
+.hdr-logo { height:34px; width:auto; }
+.hdr-sep { width:1px; height:26px; background:var(--border2); }
+.hdr-title { font-size:15px; font-weight:700; color:var(--text); }
+.hdr-sub { font-size:12px; color:var(--text3); margin-top:2px; font-family:var(--mono); }
+
+.hdr-right { display:flex; gap:8px; align-items:center; }
+.badge {
+  font-family:var(--mono); font-size:11px; font-weight:500;
+  padding:4px 12px; border-radius:20px; border:1px solid;
+}
+.badge-red  { color:#E74C3C; border-color:rgba(231,76,60,0.3); background:rgba(231,76,60,0.06); }
+.badge-blue { color:var(--blue-s); border-color:rgba(52,152,219,0.3); background:rgba(52,152,219,0.06); }
+.badge-grn  { color:var(--green-s); border-color:rgba(46,204,113,0.3); background:rgba(46,204,113,0.06); }
+
+/* ─── LAYOUT ─── */
+.layout { display:flex; flex:1; overflow:hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width:320px; flex-shrink:0;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  overflow-y:auto;
+}
+.sidebar::-webkit-scrollbar { width:3px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--border2); }
+
+.sb-body { padding:20px 18px; display:flex; flex-direction:column; gap:22px; flex:1; }
+
+.sb-group-label {
+  font-size:11px; font-weight:600; color:var(--text3);
+  letter-spacing:1.5px; text-transform:uppercase;
+  display:flex; align-items:center; gap:8px; margin-bottom:10px;
+}
+.sb-group-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Drop Zone */
+.dropzone {
+  border:1.5px dashed var(--border2); border-radius:var(--r);
+  padding:24px 16px; text-align:center; cursor:pointer;
+  transition:all 0.25s; position:relative; background:var(--card);
+}
+.dropzone:hover { border-color:var(--red); background:var(--red-dim); }
+.dropzone.has-file { border-color:var(--green); border-style:solid; background:rgba(39,174,96,0.06); }
+input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.dz-ico { font-size:28px; margin-bottom:8px; display:block; transition:transform 0.3s; }
+.dropzone:hover .dz-ico { transform:scale(1.1); }
+.dz-hint { font-size:13px; color:var(--text3); }
+.dz-name { font-family:var(--mono); font-size:12px; color:var(--green-s); font-weight:600; display:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dz-size { font-size:11px; color:var(--text3); display:none; margin-top:3px; }
+
+/* Mode */
+.mode-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.mode-btn {
+  padding:10px 8px; border-radius:8px;
+  border:1px solid var(--border); background:var(--card);
+  color:var(--text2); font-family:var(--sans); font-size:13px; font-weight:500;
+  cursor:pointer; transition:all 0.2s; text-align:center;
+}
+.mode-btn:hover { color:var(--text); border-color:var(--border2); }
+.mode-btn.on {
+  background:var(--red-dim); border-color:var(--red);
+  color:var(--text); font-weight:600;
+}
+
+/* Algorithm options */
+.alg-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; border-radius:8px;
+  border:1px solid var(--border); background:var(--card);
+  cursor:pointer; transition:all 0.2s; margin-bottom:8px;
+}
+.alg-item:last-of-type { margin-bottom:0; }
+.alg-item:hover { border-color:var(--border2); background:var(--card2); }
+.alg-item.on { border-color:var(--red); background:var(--red-dim); }
+
+.alg-radio {
+  width:20px; height:20px; border-radius:50%;
+  border:2px solid var(--border2); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s;
+}
+.alg-item.on .alg-radio { border-color:var(--red-s); background:var(--red-s); }
+.alg-radio-dot {
+  width:7px; height:7px; border-radius:50%; background:white;
+  opacity:0; transition:opacity 0.2s;
+}
+.alg-item.on .alg-radio-dot { opacity:1; }
+
+.alg-text { flex:1; }
+.alg-name { font-size:13px; font-weight:600; color:var(--text); }
+.alg-desc { font-size:11px; color:var(--text3); margin-top:2px; }
+
+.both-hint {
+  display:none; font-size:12px; color:var(--text2); text-align:center;
+  padding:7px; background:var(--red-dim); border-radius:8px;
+  border:1px solid rgba(192,57,43,0.2); margin-top:4px;
+}
+.both-hint.show { display:block; }
+
+/* Channel toggle */
+.ch-toggle {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; border-radius:8px;
+  border:1px solid var(--border); background:var(--card);
+  cursor:pointer; transition:all 0.2s;
+}
+.ch-toggle:hover { border-color:var(--border2); }
+.ch-toggle.on { border-color:var(--yellow); background:rgba(243,156,18,0.07); }
+.ch-label { font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; }
+.sw {
+  width:36px; height:20px; border-radius:10px;
+  background:var(--border2); position:relative; transition:background 0.3s; flex-shrink:0;
+}
+.sw::after {
+  content:''; position:absolute;
+  width:14px; height:14px; border-radius:50%; background:white;
+  top:3px; left:3px; transition:transform 0.3s;
+}
+.ch-toggle.on .sw { background:var(--yellow); }
+.ch-toggle.on .sw::after { transform:translateX(16px); }
+
+.ber-panel {
+  display:none; margin-top:8px; padding:14px;
+  background:rgba(243,156,18,0.05); border:1px solid rgba(243,156,18,0.2);
+  border-radius:8px;
+}
+.ber-panel.show { display:block; }
+.ber-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.ber-lbl { font-size:13px; color:var(--text2); }
+.ber-num { font-family:var(--mono); font-size:14px; font-weight:700; color:var(--yellow); }
+input[type=range] { width:100%; accent-color:var(--yellow); cursor:pointer; }
+.ber-warn { font-size:11px; color:#E67E22; margin-top:7px; display:none; }
+.ber-warn.show { display:block; }
+
+/* Run button */
+.run-footer { padding:16px 18px; border-top:1px solid var(--border); background:var(--bg2); }
+.run-btn {
+  width:100%; padding:13px; border:none; border-radius:var(--r);
+  background:var(--red); color:white;
+  font-family:var(--sans); font-size:14px; font-weight:700;
+  cursor:pointer; transition:all 0.25s; display:flex; align-items:center; justify-content:center; gap:10px;
+}
+.run-btn:hover { background:var(--red-s); transform:translateY(-1px); box-shadow:0 4px 16px var(--red-glow); }
+.run-btn:active { transform:none; box-shadow:none; }
+.run-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+.spin { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.run-btn.loading .run-lbl { display:none; }
+.run-btn.loading .spin { display:block; }
+
+/* ─── MAIN PANEL ─── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* Stats bar */
+.stats-bar {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  border-bottom:1px solid var(--border); flex-shrink:0;
+  background:var(--bg2);
+}
+.stat {
+  padding:14px 12px; border-right:1px solid var(--border);
+  transition:background 0.2s; cursor:default;
+}
+.stat:last-child { border-right:none; }
+.stat:hover { background:var(--red-dim); }
+.stat-lbl { font-size:10px; font-weight:600; color:var(--text3); letter-spacing:0.8px; text-transform:uppercase; margin-bottom:5px; }
+.stat-val { font-family:var(--mono); font-size:16px; font-weight:700; color:var(--red-s); min-height:22px; }
+.stat-val.pop { animation:pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes pop { 0%{transform:scale(0.75);opacity:0.4} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+.stat-unit { font-size:10px; color:var(--text3); margin-top:2px; }
+
+/* Progress */
+.progress { height:2px; background:var(--border); overflow:hidden; display:none; }
+.progress.on { display:block; }
+.progress-bar { height:100%; width:35%; background:linear-gradient(90deg,var(--red),var(--red-s)); animation:pani 1.4s ease-in-out infinite; }
+@keyframes pani { 0%{margin-left:-35%} 100%{margin-left:110%} }
+
+/* Tab nav */
+.tab-nav {
+  display:flex; padding:0 20px; gap:4px;
+  background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.tab-btn {
+  padding:12px 18px; background:none; border:none;
+  border-bottom:2px solid transparent; color:var(--text3);
+  font-family:var(--sans); font-size:13px; font-weight:500;
+  cursor:pointer; transition:all 0.2s; margin-bottom:-1px;
+}
+.tab-btn:hover { color:var(--text2); }
+.tab-btn.on { color:var(--text); border-bottom-color:var(--red); font-weight:600; }
+
+.tab-pane { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.tab-pane.on { display:flex; }
+
+/* Results */
+.res-scroll {
+  flex:1; overflow-y:auto; padding:18px 20px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.res-scroll::-webkit-scrollbar { width:4px; }
+.res-scroll::-webkit-scrollbar-thumb { background:var(--border2); }
+
+.empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; gap:14px; color:var(--text3);
+}
+.empty-ico { font-size:40px; opacity:0.25; animation:fl 4s ease-in-out infinite; }
+@keyframes fl { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+.empty-lbl { font-size:14px; }
+
+/* Result Card */
+.rcard {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--r); overflow:hidden;
+  animation:cardIn 0.3s ease; transition:border-color 0.2s;
+}
+.rcard:hover { border-color:var(--border2); }
+@keyframes cardIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.rcard-head {
+  padding:13px 18px; background:var(--card2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.rcard-alg { font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.rcard-alg.huf { color:#E74C3C; }
+.rcard-alg.lzw { color:var(--blue-s); }
+.rcard-file { font-size:11px; color:var(--text3); font-family:var(--mono); margin-top:3px; max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rcard-mode { font-family:var(--mono); font-size:11px; color:var(--text3); padding:4px 10px; border-radius:20px; border:1px solid var(--border2); }
+
+.rcard-metrics { display:grid; grid-template-columns:repeat(3,1fr); }
+.rcard-m { padding:18px; border-right:1px solid var(--border); }
+.rcard-m:last-child { border-right:none; }
+.rm-lbl { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:0.8px; text-transform:uppercase; margin-bottom:7px; }
+.rm-val { font-family:var(--mono); font-size:30px; font-weight:700; line-height:1; }
+.rm-val.red    { color:#E74C3C; }
+.rm-val.green  { color:var(--green-s); }
+.rm-val.yellow { color:var(--yellow); }
+.rm-val.blue   { color:var(--blue-s); }
+.rm-val.muted  { color:var(--text2); font-size:22px; }
+.rm-sub { font-size:12px; color:var(--text3); margin-top:5px; }
+
+.ent-track { height:4px; background:var(--border); border-radius:2px; margin-top:8px; overflow:hidden; }
+.ent-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--green),var(--yellow),#E74C3C); transition:width 1.2s ease; width:0; }
+
+.rcard-info { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border); }
+.rcard-info-i { padding:12px 18px; border-right:1px solid var(--border); }
+.rcard-info-i:last-child { border-right:none; }
+.ri-lbl { font-size:11px; color:var(--text3); margin-bottom:3px; }
+.ri-val { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text2); }
+
+.rcard-foot {
+  padding:10px 18px; border-top:1px solid var(--border);
+  background:var(--card2); display:flex; align-items:center; justify-content:space-between;
+}
+.lossless { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; border:1px solid; }
+.lossless.ok   { color:var(--green-s); border-color:rgba(46,204,113,0.3); background:rgba(46,204,113,0.08); }
+.lossless.fail { color:#E74C3C; border-color:rgba(231,76,60,0.3); background:rgba(231,76,60,0.08); }
+.rcard-fname { font-size:11px; color:var(--text3); font-family:var(--mono); }
+
+/* Download */
+.dl-area { padding:0 20px 14px; }
+.dl-btn { display:none; align-items:center; gap:8px; padding:10px 18px; background:rgba(46,204,113,0.08); border:1px solid rgba(46,204,113,0.25); border-radius:8px; color:var(--green-s); font-family:var(--mono); font-size:12px; font-weight:700; text-decoration:none; cursor:pointer; transition:all 0.2s; }
+.dl-btn:hover { background:rgba(46,204,113,0.15); }
+.dl-btn.show { display:inline-flex; }
+
+/* Channel result */
+.ch-res { display:none; margin:0 20px 16px; background:var(--card); border:1px solid rgba(243,156,18,0.2); border-radius:var(--r); overflow:hidden; animation:cardIn 0.3s ease; }
+.ch-res.show { display:block; }
+.ch-res-head { padding:12px 18px; background:var(--card2); border-bottom:1px solid var(--border); font-family:var(--mono); font-size:11px; color:var(--yellow); letter-spacing:1px; }
+.ch-res-grid { display:grid; grid-template-columns:repeat(4,1fr); padding:16px 18px; gap:12px; }
+.ch-item { text-align:center; }
+.ch-v { font-family:var(--mono); font-size:20px; font-weight:700; }
+.ch-l { font-size:11px; color:var(--text3); margin-top:3px; }
+.ch-foot { padding:10px 18px; border-top:1px solid var(--border); }
+.ch-badge { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:12px; font-weight:700; padding:5px 14px; border-radius:20px; border:1px solid; }
+.ch-badge.success { color:var(--green-s); border-color:rgba(46,204,113,0.3); background:rgba(46,204,113,0.08); }
+.ch-badge.high_ber { color:var(--yellow); border-color:rgba(243,156,18,0.3); background:rgba(243,156,18,0.08); }
+.ch-badge.failed { color:#E67E22; border-color:rgba(230,126,34,0.3); background:rgba(230,126,34,0.08); }
+
+/* Compare pane */
+.cmp-scroll { flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:14px; }
+.cmp-scroll::-webkit-scrollbar { width:4px; }
+.cmp-scroll::-webkit-scrollbar-thumb { background:var(--border2); }
+.cmp-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text3); font-size:14px; }
+
+.winner-banner { display:flex; align-items:center; gap:16px; padding:18px 22px; background:rgba(39,174,96,0.08); border:1px solid rgba(39,174,96,0.25); border-radius:var(--r); }
+.winner-ico { font-size:30px; }
+.winner-title { font-size:16px; font-weight:700; color:var(--green-s); }
+.winner-sub { font-size:12px; color:var(--text3); margin-top:3px; }
+
+/* 3D Flip cards */
+.flip-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.flip-card { perspective:1000px; height:175px; cursor:pointer; }
+.flip-inner { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform 0.5s; }
+.flip-card:hover .flip-inner { transform:rotateY(180deg); }
+.f-front, .f-back { position:absolute; inset:0; backface-visibility:hidden; border-radius:var(--r); padding:18px; border:1px solid var(--border); background:var(--card); }
+.f-back { transform:rotateY(180deg); background:var(--card2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+.fc-tag { font-size:10px; color:var(--text3); font-family:var(--mono); letter-spacing:1px; margin-bottom:6px; }
+.fc-ratio { font-family:var(--mono); font-size:42px; font-weight:800; line-height:1; }
+.fc-ratio.r { color:#E74C3C; }
+.fc-ratio.b { color:var(--blue-s); }
+.fc-sub { font-size:11px; color:var(--text3); }
+.fc-stats { display:flex; gap:14px; margin-top:12px; }
+.fcs { text-align:center; }
+.fcs-v { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--text2); }
+.fcs-l { font-size:11px; color:var(--text3); margin-top:2px; }
+.fb-l { font-size:11px; color:var(--text3); font-family:var(--mono); }
+.fb-v { font-family:var(--mono); font-size:22px; font-weight:700; color:var(--green-s); }
+.fb-s { font-size:11px; color:var(--text3); }
+
+/* Chart */
+.chart-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:18px; }
+.chart-title { font-size:12px; font-weight:600; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px; }
+.bars-row { display:flex; align-items:flex-end; gap:22px; height:110px; }
+.bg-group { display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+.bg-bars { display:flex; gap:6px; align-items:flex-end; height:92px; width:100%; justify-content:center; }
+.bg-bar { flex:1; max-width:40px; border-radius:5px 5px 0 0; height:0; transition:height 0.8s cubic-bezier(0.34,1.2,0.64,1); position:relative; cursor:pointer; }
+.bg-bar:hover { filter:brightness(1.15); }
+.bgbv { position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:10px; white-space:nowrap; }
+.bg-lbl { font-size:11px; color:var(--text3); font-family:var(--mono); text-align:center; }
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-left">
+    <img src="/ecu-logo.png" class="hdr-logo" alt="ECU">
+    <div class="hdr-sep"></div>
+    <div>
+      <div class="hdr-title">Compression Tool</div>
+      <div class="hdr-sub">Information Theory & Data Compression · Spring 2026</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="badge badge-red">Huffman</span>
+    <span class="badge badge-blue">LZW</span>
+    <span class="badge badge-grn">Bonus ★</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-body">
+
+    <!-- File -->
+    <div>
+      <div class="sb-group-label">File</div>
+      <div class="dropzone" id="dz">
+        <input type="file" id="fi">
+        <span class="dz-ico" id="dz-ico">📄</span>
+        <div class="dz-hint" id="dz-hint">Drop file here · click to browse</div>
+        <div class="dz-name" id="dz-name"></div>
+        <div class="dz-size" id="dz-size"></div>
+      </div>
+    </div>
+
+    <!-- Mode -->
+    <div>
+      <div class="sb-group-label">Mode</div>
+      <div class="mode-row">
+        <button class="mode-btn on" data-m="compress">🗜 Compress</button>
+        <button class="mode-btn" data-m="decompress">📦 Decompress</button>
+      </div>
+    </div>
+
+    <!-- Algorithm -->
+    <div>
+      <div class="sb-group-label">Algorithm</div>
+      <div class="alg-item on" data-a="huffman" onclick="toggleAlg(this)">
+        <div class="alg-radio"><div class="alg-radio-dot"></div></div>
+        <div class="alg-text">
+          <div class="alg-name">Huffman Coding</div>
+          <div class="alg-desc">Variable-length prefix codes · min-heap</div>
+        </div>
+      </div>
+      <div class="alg-item" data-a="lzw" onclick="toggleAlg(this)">
+        <div class="alg-radio"><div class="alg-radio-dot"></div></div>
+        <div class="alg-text">
+          <div class="alg-name">LZW</div>
+          <div class="alg-desc">Dictionary-based · 16-bit codes</div>
+        </div>
+      </div>
+      <div class="both-hint" id="both-hint">★ Both selected — comparison mode</div>
+    </div>
+
+    <!-- Channel Bonus -->
+    <div>
+      <div class="sb-group-label">Bonus · Channel</div>
+      <div class="ch-toggle" id="ch-toggle" onclick="toggleCh()">
+        <span class="ch-label">📡 Noisy Channel + Hamming FEC</span>
+        <div class="sw"></div>
+      </div>
+      <div class="ber-panel" id="ber-panel">
+        <div class="ber-header">
+          <span class="ber-lbl">Bit Error Rate</span>
+          <span class="ber-num" id="ber-num">0.010</span>
+        </div>
+        <input type="range" id="ber-sl" min="0" max="100" value="10" oninput="updBer(this.value)">
+        <div class="ber-warn" id="ber-warn">⚠ BER &gt; 0.05 may exceed Hamming(7,4) capacity</div>
+      </div>
+    </div>
+
+  </div><!-- /sb-body -->
+
+  <!-- Run -->
+  <div class="run-footer">
+    <button class="run-btn" id="run-btn" onclick="doRun()">
+      <span class="run-lbl">▶ &nbsp; RUN</span>
+      <div class="spin"></div>
+    </button>
+  </div>
+</div><!-- /sidebar -->
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-lbl">Original</div><div class="stat-val" id="sv0">—</div><div class="stat-unit">size</div></div>
+    <div class="stat"><div class="stat-lbl">Output</div><div class="stat-val" id="sv1">—</div><div class="stat-unit">size</div></div>
+    <div class="stat"><div class="stat-lbl">Ratio</div><div class="stat-val" id="sv2">—</div><div class="stat-unit">×</div></div>
+    <div class="stat"><div class="stat-lbl">Saved</div><div class="stat-val" id="sv3">—</div><div class="stat-unit">%</div></div>
+    <div class="stat"><div class="stat-lbl">Time</div><div class="stat-val" id="sv4">—</div><div class="stat-unit">ms</div></div>
+    <div class="stat"><div class="stat-lbl">Memory</div><div class="stat-val" id="sv5">—</div><div class="stat-unit">KB</div></div>
+    <div class="stat"><div class="stat-lbl">H(X) Entropy</div><div class="stat-val" id="sv6">—</div><div class="stat-unit">bits/sym</div></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress" id="progress"><div class="progress-bar"></div></div>
+
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn on" onclick="openTab('res',this)">Results</button>
+    <button class="tab-btn" onclick="openTab('cmp',this)">Comparison</button>
+  </div>
+
+  <!-- Results tab -->
+  <div class="tab-pane on" id="tab-res">
+    <div class="res-scroll" id="res-scroll">
+      <div class="empty" id="empty">
+        <div class="empty-ico">⚡</div>
+        <div class="empty-lbl">Select a file and press RUN</div>
+      </div>
+    </div>
+    <div class="dl-area">
+      <a class="dl-btn" id="dl-btn" href="#" target="_blank">⬇ &nbsp; Download Output File</a>
+    </div>
+    <div class="ch-res" id="ch-res"></div>
+  </div>
+
+  <!-- Comparison tab -->
+  <div class="tab-pane" id="tab-cmp">
+    <div class="cmp-scroll" id="cmp-scroll">
+      <div class="cmp-empty" id="cmp-empty">Select both algorithms and press RUN to compare</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+// ── State ──────────────────────────────────────────
+let file=null, mode='compress', selAlgs=new Set(['huffman']), chOn=false, results={}; // UI state shared by all handlers
+
+function inferAlgFromFilename(name){
+  const n=(name||'').toLowerCase();          // normalize for robust matching
+  if(n.endsWith('.huf')) return 'huffman';   // Huffman output extension
+  if(n.endsWith('.lzw')) return 'lzw';       // LZW output extension
+  return null;                               // unknown / not a compressed output
+}
+
+function setOnlyAlg(a){
+  selAlgs = new Set([a]); // force a single algorithm selection in UI
+  document.querySelectorAll('.alg-item').forEach(c=>c.classList.toggle('on',selAlgs.has(c.dataset.a))); // re-render
+  document.getElementById('both-hint').classList.remove('show'); // comparison hint only applies to dual selection
+}
+
+function validateSelection(){
+  if(!file) return {ok:false, msg:'Please select a file first.'}; // can't run without input
+  if(mode==='decompress'){                                        // for decompress, input must be a tool-produced file
+    const inf=inferAlgFromFilename(file.name);
+    if(!inf) return {ok:false, msg:'For DECOMPRESS, please upload a .huf or .lzw file (output of compression).'};
+  }
+  return {ok:true, msg:''}; // OK to run
+}
+
+function enforceModeRules(){
+  // Decompress can't run in "comparison/both" mode, and should match file extension when possible.
+  if(mode==='decompress'){
+    if(selAlgs.size>1) setOnlyAlg([...selAlgs][0]);    // collapse multi-selection → single (avoid dual API calls)
+    if(file){
+      const inf=inferAlgFromFilename(file.name);
+      if(inf) setOnlyAlg(inf);                         // auto-pick algorithm based on .huf/.lzw
+    }
+  }
+  const v=validateSelection();                         // compute whether RUN should be enabled
+  const btn=document.getElementById('run-btn');
+  btn.disabled = !v.ok;                                // disable RUN when selection is invalid
+}
+
+// ── Live Reload (development) ──────────────────────
+(function(){
+  let lastCheck=Date.now();
+  setInterval(async()=>{
+    try{
+      const r=await fetch('/api/ping?t='+Date.now());
+      const d=await r.json();
+      if(d.changed && Date.now()-lastCheck>2000){
+        lastCheck=Date.now();
+        location.reload();
+      }
+    }catch(e){}
+  },1500);
+})();
+
+// ── File ───────────────────────────────────────────
+const dz=document.getElementById('dz');
+document.getElementById('fi').addEventListener('change',e=>{if(e.target.files[0])setFile(e.target.files[0]);});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--red)';});
+dz.addEventListener('dragleave',()=>dz.style.borderColor='');
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='';if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);});
+
+function setFile(f){
+  file=f; dz.classList.add('has-file');                                 // store input file + update dropzone state
+  document.getElementById('dz-ico').textContent='✅';                    // visual "file selected" indicator
+  document.getElementById('dz-hint').style.display='none';              // hide hint once we have a file
+  const n=document.getElementById('dz-name'); n.style.display='block'; n.textContent=f.name; // show filename
+  const s=document.getElementById('dz-size'); s.style.display='block'; s.textContent=fmtSz(f.size); // show size
+  enforceModeRules();                                                   // auto-adjust algorithm/mode constraints
+}
+
+// ── Mode ───────────────────────────────────────────
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); mode=b.dataset.m; // mode = 'compress' | 'decompress'
+    enforceModeRules();                      // keep UI consistent with chosen mode
+  });
+});
+
+// ── Algorithm ──────────────────────────────────────
+function toggleAlg(el){
+  const a=el.dataset.a;
+  if(selAlgs.has(a)){ if(selAlgs.size===1) return; selAlgs.delete(a); } // prevent "none selected"
+  else selAlgs.add(a);                                                  // allow dual-selection for comparison
+  document.querySelectorAll('.alg-item').forEach(c=>c.classList.toggle('on',selAlgs.has(c.dataset.a))); // re-render
+  document.getElementById('both-hint').classList.toggle('show',selAlgs.size===2); // show hint if comparing
+  enforceModeRules();                                                   // enforce decompress rules
+}
+
+// ── Channel ────────────────────────────────────────
+function toggleCh(){
+  chOn=!chOn;
+  document.getElementById('ch-toggle').classList.toggle('on',chOn);
+  document.getElementById('ber-panel').classList.toggle('show',chOn);
+}
+function updBer(v){
+  const b=v/1000;
+  document.getElementById('ber-num').textContent=b.toFixed(3);
+  document.getElementById('ber-warn').classList.toggle('show',b>0.05);
+}
+
+// ── Tabs ───────────────────────────────────────────
+function openTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tab-'+name).classList.add('on');
+}
+
+// ── Run ────────────────────────────────────────────
+async function doRun(){
+  const v=validateSelection();
+  if(!v.ok){alert(v.msg); return;}
+  const btn=document.getElementById('run-btn');
+  btn.classList.add('loading'); btn.disabled=true;
+  document.getElementById('progress').classList.add('on');
+  document.getElementById('empty').style.display='none';
+  document.getElementById('res-scroll').innerHTML='';
+  document.getElementById('dl-btn').classList.remove('show');
+  document.getElementById('ch-res').classList.remove('show');
+  ['sv0','sv1','sv2','sv3','sv4','sv5','sv6'].forEach(id=>setStat(id,'…'));
+  results={};
+  const algs=[...selAlgs];
+  for(const alg of algs) await runOne(alg, algs.length>1);
+  const last=results[algs[algs.length-1]];
+  if(last){
+    setStat('sv0',last.original_size); setStat('sv1',last.output_size);
+    setStat('sv2',last.ratio+'×');    setStat('sv3',last.saved+'%');
+    setStat('sv4',last.time_ms+' ms'); setStat('sv5',last.memory_kb+' KB');
+    setStat('sv6',last.entropy);
+  }
+  if(algs.length===2) renderCmp();
+  btn.classList.remove('loading'); btn.disabled=false;
+  document.getElementById('progress').classList.remove('on');
+}
+
+async function runOne(alg, dual){
+  const ber=document.getElementById('ber-sl').value/1000;
+  const fd=new FormData();
+  fd.append('file',file); fd.append('algorithm',alg);
+  fd.append('mode',mode); fd.append('use_channel',chOn&&!dual);
+  fd.append('ber',ber);
+  try{
+    const res=await fetch('/api/compress',{method:'POST',body:fd});
+    const data=await res.json();
+    if(data.error){showErr(data.error);return;}
+    results[alg]=data;
+    showCard(data,alg);
+    if(!dual){
+      const dl=document.getElementById('dl-btn');
+      dl.href=`/api/download/${data.filename}`; dl.classList.add('show');
+    }
+    if(data.channel&&!dual) showCh(data.channel);
+  }catch(e){showErr(e.message);}
+}
+
+// ── Result Card ────────────────────────────────────
+function showCard(d, alg){
+  const scroll=document.getElementById('res-scroll');
+  const isHuf=alg==='huffman';
+  const entPct=Math.min((d.entropy/8)*100,100).toFixed(1);
+  const ratioColor=d.ratio>=2?'green':d.ratio>=1?'red':'yellow';
+
+  const card=document.createElement('div');
+  card.className='rcard';
+  card.innerHTML=`
+    <div class="rcard-head">
+      <div>
+        <div class="rcard-alg ${isHuf?'huf':'lzw'}">${isHuf?'🌳 Huffman Coding':'📖 LZW (Lempel-Ziv-Welch)'}</div>
+        <div class="rcard-file">${file.name}</div>
+      </div>
+      <div class="rcard-mode">${mode.toUpperCase()}</div>
+    </div>
+    <div class="rcard-metrics">
+      <div class="rcard-m">
+        <div class="rm-lbl">Compression Ratio</div>
+        <div class="rm-val ${ratioColor}">${d.ratio}×</div>
+        <div class="rm-sub">${d.saved>=0?d.saved+'% smaller':Math.abs(d.saved)+'% larger'}</div>
+      </div>
+      <div class="rcard-m">
+        <div class="rm-lbl">Entropy H(X)</div>
+        <div class="rm-val yellow">${d.entropy}</div>
+        <div class="rm-sub">bits / symbol</div>
+        <div class="ent-track"><div class="ent-fill" data-w="${entPct}%"></div></div>
+      </div>
+      <div class="rcard-m">
+        <div class="rm-lbl">Output Size</div>
+        <div class="rm-val muted">${d.output_size}</div>
+        <div class="rm-sub">from ${d.original_size}</div>
+      </div>
+    </div>
+    <div class="rcard-info">
+      <div class="rcard-info-i"><div class="ri-lbl">⏱ Execution Time</div><div class="ri-val">${d.time_ms} ms</div></div>
+      <div class="rcard-info-i"><div class="ri-lbl">🧠 Peak Memory</div><div class="ri-val">${d.memory_kb} KB</div></div>
+      <div class="rcard-info-i"><div class="ri-lbl">📁 Output File</div><div class="ri-val" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.filename}</div></div>
+    </div>
+    ${d.lossless!==null?`<div class="rcard-foot"><span class="lossless ${d.lossless?'ok':'fail'}">${d.lossless?'✅ Lossless — PASS':'❌ Lossless — FAIL'}</span><span class="rcard-fname">${d.filename}</span></div>`:''}
+  `;
+  scroll.appendChild(card);
+  scroll.scrollTop=scroll.scrollHeight;
+  setTimeout(()=>card.querySelectorAll('.ent-fill[data-w]').forEach(el=>el.style.width=el.dataset.w),250);
+}
+
+function showErr(msg){
+  const scroll=document.getElementById('res-scroll');
+  const card=document.createElement('div');
+  card.className='rcard'; card.style.borderColor='rgba(231,76,60,0.4)';
+  card.innerHTML=`<div class="rcard-head"><div class="rcard-alg" style="color:#E74C3C">❌ Error</div></div><div style="padding:16px 18px;font-family:var(--mono);font-size:13px;color:#E74C3C">${msg}</div>`;
+  scroll.appendChild(card);
+}
+
+// ── Channel Result ─────────────────────────────────
+function showCh(ch){
+  const rt=ch.recovery==='success'?'✅ Recovery Successful':ch.recovery==='high_ber'?'⚠ BER Too High':'❌ Recovery Failed';
+  const el=document.getElementById('ch-res');
+  el.innerHTML=`
+    <div class="ch-res-head">📡 BONUS — Noisy Channel + Hamming(7,4) Error Correction</div>
+    <div class="ch-res-grid">
+      <div class="ch-item"><div class="ch-v" style="color:var(--yellow)">${ch.ber.toFixed(3)}</div><div class="ch-l">Target BER</div></div>
+      <div class="ch-item"><div class="ch-v" style="color:#E74C3C">${ch.bits_flipped.toLocaleString()}</div><div class="ch-l">Bits Flipped</div></div>
+      <div class="ch-item"><div class="ch-v" style="color:var(--green-s)">${ch.errors_corrected.toLocaleString()}</div><div class="ch-l">Errors Corrected</div></div>
+      <div class="ch-item"><div class="ch-v" style="color:var(--blue-s)">${ch.overhead}×</div><div class="ch-l">Overhead</div></div>
+    </div>
+    <div class="ch-foot"><div class="ch-badge ${ch.recovery}">${rt}</div></div>
+  `;
+  el.classList.add('show');
+}
+
+// ── Compare ────────────────────────────────────────
+function renderCmp(){
+  const H=results.huffman, L=results.lzw;
+  if(!H||!L) return;
+  const scroll=document.getElementById('cmp-scroll');
+  document.getElementById('cmp-empty').style.display='none';
+  const win=H.ratio>=L.ratio?'Huffman Coding':'LZW';
+
+  scroll.innerHTML=`
+  <div class="winner-banner">
+    <div class="winner-ico">🏆</div>
+    <div>
+      <div class="winner-title">Winner: ${win} — ${Math.max(H.ratio,L.ratio).toFixed(4)}× ratio</div>
+      <div class="winner-sub">Tested on "${file.name}"</div>
+    </div>
+  </div>
+  <div class="flip-row">
+    <div class="flip-card"><div class="flip-inner">
+      <div class="f-front">
+        <div class="fc-tag">HUFFMAN CODING</div>
+        <div class="fc-ratio r">${H.ratio}×</div>
+        <div class="fc-sub">compression ratio</div>
+        <div class="fc-stats">
+          <div class="fcs"><div class="fcs-v">${H.saved}%</div><div class="fcs-l">saved</div></div>
+          <div class="fcs"><div class="fcs-v">${H.time_ms}ms</div><div class="fcs-l">time</div></div>
+          <div class="fcs"><div class="fcs-v">${H.output_size}</div><div class="fcs-l">output</div></div>
+        </div>
+      </div>
+      <div class="f-back">
+        <div class="fb-l">PEAK MEMORY</div>
+        <div class="fb-v">${H.memory_kb} KB</div>
+        <div class="fb-s">H(X) = ${H.entropy} bits/sym</div>
+      </div>
+    </div></div>
+    <div class="flip-card"><div class="flip-inner">
+      <div class="f-front">
+        <div class="fc-tag">LZW</div>
+        <div class="fc-ratio b">${L.ratio}×</div>
+        <div class="fc-sub">compression ratio</div>
+        <div class="fc-stats">
+          <div class="fcs"><div class="fcs-v">${L.saved}%</div><div class="fcs-l">saved</div></div>
+          <div class="fcs"><div class="fcs-v">${L.time_ms}ms</div><div class="fcs-l">time</div></div>
+          <div class="fcs"><div class="fcs-v">${L.output_size}</div><div class="fcs-l">output</div></div>
+        </div>
+      </div>
+      <div class="f-back">
+        <div class="fb-l">PEAK MEMORY</div>
+        <div class="fb-v">${L.memory_kb} KB</div>
+        <div class="fb-s">H(X) = ${L.entropy} bits/sym</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="chart-card" id="chart-card">
+    <div class="chart-title">Side-by-Side Comparison</div>
+    <div class="bars-row" id="bars-row"></div>
+  </div>`;
+
+  buildBars(H,L);
+  document.querySelectorAll('.tab-btn')[1].click();
+}
+
+function buildBars(H,L){
+  const row=document.getElementById('bars-row');
+  [{lbl:'RATIO',hv:H.ratio,lv:L.ratio,u:'×'},{lbl:'SAVED %',hv:H.saved,lv:L.saved,u:'%'},{lbl:'TIME ms',hv:H.time_ms,lv:L.time_ms,u:'ms'},{lbl:'MEM KB',hv:H.memory_kb,lv:L.memory_kb,u:'KB'}]
+  .forEach(m=>{
+    const mx=Math.max(m.hv,m.lv,0.001);
+    const hp=Math.max((m.hv/mx)*85,2).toFixed(1);
+    const lp=Math.max((m.lv/mx)*85,2).toFixed(1);
+    const g=document.createElement('div'); g.className='bg-group'; g.style.flex='1';
+    g.innerHTML=`<div class="bg-bars">
+      <div class="bg-bar" style="background:#C0392B;height:0" data-h="${hp}px"><span class="bgbv" style="color:#E74C3C">${m.hv}${m.u}</span></div>
+      <div class="bg-bar" style="background:var(--blue);height:0" data-h="${lp}px"><span class="bgbv" style="color:var(--blue-s)">${m.lv}${m.u}</span></div>
+    </div><div class="bg-lbl">${m.lbl}</div>`;
+    row.appendChild(g);
+  });
+  setTimeout(()=>document.querySelectorAll('.bg-bar[data-h]').forEach(b=>b.style.height=b.dataset.h),120);
+}
+
+// ── Helpers ────────────────────────────────────────
+function setStat(id,val){
+  const el=document.getElementById(id);
+  el.textContent=val; el.classList.remove('pop');
+  void el.offsetWidth; el.classList.add('pop');
+}
+function fmtSz(b){
+  if(b<1024) return b+' B';
+  if(b<1048576) return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(2)+' MB';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# Web UI only — core algorithms use the Python standard library
+flask>=3.0,<4
