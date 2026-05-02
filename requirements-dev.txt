@@ -1,4 +1,0 @@
-# Development / CI-only dependencies (not required for end users)
--r requirements.txt
-
-ruff>=0.8,<1

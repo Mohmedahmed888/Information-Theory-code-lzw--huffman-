@@ -4,9 +4,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-/actions/workflows/ci.yml">
-    <img src="https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-/actions/workflows/ci.yml/badge.svg" alt="GitHub Actions CI"/>
-  </a>
   <img src="https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white" alt="Python 3.8+"/>
   <img src="https://img.shields.io/badge/flask-3.x-green?logo=flask&logoColor=white" alt="Flask"/>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"/>
@@ -41,8 +38,6 @@ Supporting components include **Shannon entropy** analysis (`utils/entropy.py`),
 - [File formats](#file-formats)
 - [Project layout](#project-layout)
 - [Testing](#testing)
-- [Continuous integration](#continuous-integration)
-- [Docker (web UI)](#docker-web-ui)
 - [Screenshots & documentation bundle](#screenshots--documentation-bundle)
 - [Suggested GitHub topics](#suggested-github-topics)
 - [Releases](#releases)
@@ -190,11 +185,7 @@ Binary layout (big-endian integers where applicable):
 ├── run.bat                # Windows menu launcher
 ├── requirements.txt       # Web dependency pin (Flask)
 ├── LICENSE                # MIT
-├── pyproject.toml         # ruff tooling config
-├── requirements-dev.txt   # ruff (CI & local dev)
-├── Dockerfile             # Containerized Flask web demo
-├── .github/workflows/     # CI pipeline
-├── test_all.py            # Integration-style scripted tests
+├── test_all.py            # Scripted integration tests
 ├── docs/                   # REPORT, release notes, policies, screenshot folder
 ├── create_test_files.py   # Sample data helper
 ├── algorithms/
@@ -225,42 +216,7 @@ python test_all.py
 
 Runs multi-file demos, prints throughput-style metrics (via `tracemalloc`), verifies **lossless** integrity with MD5, and executes the noisy-channel bonus harness.
 
-### Lint (ruff, optional for contributors)
-
-```bash
-pip install -r requirements-dev.txt
-ruff check .
-```
-
----
-
-## Continuous integration
-
-GitHub Actions workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executes on pushes/PRs to `main`:
-
-1. **`ruff check .`** — static diagnostics on Python sources (optional PyQt prototype `gui/main_app.py` excluded to avoid heavyweight optional-deps noise)  
-2. **`python test_all.py`** — scripted integration sweep (compress/decompress + bonus channel)
-
-Badge status is shown near the top of this README once Actions have run successfully on GitHub.
-
----
-
-## Docker (web UI)
-
-Minimal image that serves **only** the Flask application (algorithms/utils/web assets copied in).
-
-```bash
-docker build -t compression-web .
-docker run --rm -p 5000:5000 compression-web
-# Browse http://127.0.0.1:5000
-```
-
-Environment knobs:
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `FLASK_HOST` | `127.0.0.1` locally / `0.0.0.0` inside Docker image | Listen address |
-| `FLASK_PORT` | `5000` | TCP port |
+Optional: when running `python app.py`, environment variables **`FLASK_HOST`** and **`FLASK_PORT`** override the bind address and port (defaults `127.0.0.1` and `5000`).
 
 ---
 
@@ -289,7 +245,7 @@ GitHub Topics must be toggled manually in the repository **About** settings. Pas
 
 ## Releases
 
-Create an annotated milestone after CI is green:
+Create an annotated tag when you are ready to freeze a submission snapshot:
 
 ```bash
 git tag -a v1.0.0 -m "v1.0.0 coursework bundle"
