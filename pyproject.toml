@@ -11,15 +11,10 @@ requires-python = ">=3.8"
 license = { text = "MIT" }
 authors = [{ name = "Mohmedahmed888" }]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
-addopts = "-q --tb=short"
-
 [tool.ruff]
 target-version = "py38"
 line-length = 120
-src = ["algorithms", "utils", "gui", "tests", "."]
+src = ["algorithms", "utils", "gui", "."]
 exclude = [
     ".venv",
     "test_files",

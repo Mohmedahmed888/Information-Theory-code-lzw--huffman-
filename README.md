@@ -190,12 +190,11 @@ Binary layout (big-endian integers where applicable):
 ├── run.bat                # Windows menu launcher
 ├── requirements.txt       # Web dependency pin (Flask)
 ├── LICENSE                # MIT
-├── pyproject.toml         # pytest + ruff tooling config
-├── requirements-dev.txt   # pytest / ruff (CI & local dev)
+├── pyproject.toml         # ruff tooling config
+├── requirements-dev.txt   # ruff (CI & local dev)
 ├── Dockerfile             # Containerized Flask web demo
 ├── .github/workflows/     # CI pipeline
 ├── test_all.py            # Integration-style scripted tests
-├── tests/                  # pytest unit tests
 ├── docs/                   # REPORT, release notes, policies, screenshot folder
 ├── create_test_files.py   # Sample data helper
 ├── algorithms/
@@ -226,12 +225,11 @@ python test_all.py
 
 Runs multi-file demos, prints throughput-style metrics (via `tracemalloc`), verifies **lossless** integrity with MD5, and executes the noisy-channel bonus harness.
 
-### Unit tests (pytest + ruff for developers)
+### Lint (ruff, optional for contributors)
 
 ```bash
 pip install -r requirements-dev.txt
 ruff check .
-pytest tests/ -v
 ```
 
 ---
@@ -241,8 +239,7 @@ pytest tests/ -v
 GitHub Actions workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executes on pushes/PRs to `main`:
 
 1. **`ruff check .`** — static diagnostics on Python sources (optional PyQt prototype `gui/main_app.py` excluded to avoid heavyweight optional-deps noise)  
-2. **`pytest tests/`** — fast codec + entropy regressions  
-3. **`python test_all.py`** — scripted integration sweep
+2. **`python test_all.py`** — scripted integration sweep (compress/decompress + bonus channel)
 
 Badge status is shown near the top of this README once Actions have run successfully on GitHub.
 

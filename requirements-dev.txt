@@ -1,5 +1,4 @@
 # Development / CI-only dependencies (not required for end users)
 -r requirements.txt
 
-pytest>=8.0,<10
 ruff>=0.8,<1

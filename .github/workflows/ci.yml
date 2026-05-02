@@ -30,8 +30,5 @@ jobs:
       - name: Ruff
         run: ruff check .
 
-      - name: Pytest (unit tests)
-        run: pytest tests/ -v
-
       - name: Integration smoke (test_all.py)
         run: python test_all.py

@@ -11,12 +11,11 @@ Initial public release bundled for coursework demos and reproducible evaluation.
 - **Flask web UI** + JSON API (`app.py`, `web/index.html`)
 - Optional **Hamming(7,4) + BSC** bonus pipeline (`algorithms/channel.py`)
 - Automated integration suite (`test_all.py`)
-- Unit tests (`tests/` via `pytest`)
 
 ## Developer experience
 
-- `requirements-dev.txt` for **pytest + ruff**
-- GitHub Actions **CI**: lint (`ruff`), unit tests, `test_all.py` smoke pass
+- `requirements-dev.txt` for **ruff** (lint-only dev helper)
+- GitHub Actions **CI**: lint (`ruff`), `test_all.py` smoke pass
 - `Dockerfile` for containerized Web UI (`FLASK_HOST=0.0.0.0`)
 
 ## Operational notes
@@ -29,6 +28,5 @@ Initial public release bundled for coursework demos and reproducible evaluation.
 ```bash
 pip install -r requirements-dev.txt
 ruff check .
-pytest tests/ -v
 python test_all.py
 ```
