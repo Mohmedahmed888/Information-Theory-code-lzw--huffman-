@@ -4,6 +4,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-/actions/workflows/ci.yml">
+    <img src="https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-/actions/workflows/ci.yml/badge.svg" alt="GitHub Actions CI"/>
+  </a>
   <img src="https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white" alt="Python 3.8+"/>
   <img src="https://img.shields.io/badge/flask-3.x-green?logo=flask&logoColor=white" alt="Flask"/>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"/>
@@ -38,6 +41,8 @@ Supporting components include **Shannon entropy** analysis (`utils/entropy.py`),
 - [File formats](#file-formats)
 - [Project layout](#project-layout)
 - [Testing](#testing)
+- [Continuous integration](#continuous-integration)
+- [Docker (web UI)](#docker-web-ui)
 - [Screenshots & documentation bundle](#screenshots--documentation-bundle)
 - [Suggested GitHub topics](#suggested-github-topics)
 - [Releases](#releases)
@@ -129,6 +134,8 @@ python gui/app.py
 python test_all.py
 ```
 
+Optional for the web server: set **`FLASK_HOST`** / **`FLASK_PORT`** (defaults `127.0.0.1` and `5000`). See [Docker](#docker-web-ui) for container defaults.
+
 ### Compress / decompress rules
 
 | Mode | Input | Output |
@@ -185,6 +192,11 @@ Binary layout (big-endian integers where applicable):
 ├── run.bat                # Windows menu launcher
 ├── requirements.txt       # Web dependency pin (Flask)
 ├── LICENSE                # MIT
+├── pyproject.toml         # pytest + ruff configuration
+├── requirements-dev.txt   # pytest / ruff (dev & CI)
+├── Dockerfile             # Optional container for Flask UI
+├── .github/workflows/     # CI (ruff + pytest + test_all)
+├── tests/                  # pytest unit tests
 ├── test_all.py            # Scripted integration tests
 ├── docs/                   # REPORT, release notes, policies, screenshot folder
 ├── create_test_files.py   # Sample data helper
@@ -216,7 +228,40 @@ python test_all.py
 
 Runs multi-file demos, prints throughput-style metrics (via `tracemalloc`), verifies **lossless** integrity with MD5, and executes the noisy-channel bonus harness.
 
-Optional: when running `python app.py`, environment variables **`FLASK_HOST`** and **`FLASK_PORT`** override the bind address and port (defaults `127.0.0.1` and `5000`).
+### Unit tests (pytest + ruff)
+
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest tests/ -v
+```
+
+---
+
+## Continuous integration
+
+Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on pushes/PRs to `main`:
+
+1. **`ruff check .`** — static checks (`gui/main_app.py` excluded; optional PyQt prototype)
+2. **`pytest tests/`** — codec & entropy regressions
+3. **`python test_all.py`** — integration sweep
+
+---
+
+## Docker (web UI)
+
+```bash
+docker build -t compression-web .
+docker run --rm -p 5000:5000 compression-web
+# Open http://127.0.0.1:5000
+```
+
+Inside the image, **`FLASK_HOST=0.0.0.0`** so the server listens on all interfaces. Locally, override bind/port anytime:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `FLASK_HOST` | `127.0.0.1` (local) / `0.0.0.0` (Dockerfile) | Listen address |
+| `FLASK_PORT` | `5000` | TCP port |
 
 ---
 
@@ -245,7 +290,7 @@ GitHub Topics must be toggled manually in the repository **About** settings. Pas
 
 ## Releases
 
-Create an annotated tag when you are ready to freeze a submission snapshot:
+Create an annotated tag after CI passes (or when you freeze a submission snapshot):
 
 ```bash
 git tag -a v1.0.0 -m "v1.0.0 coursework bundle"

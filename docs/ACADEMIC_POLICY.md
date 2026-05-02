@@ -7,7 +7,7 @@ This project ships with an **MIT** license in the repository root (`LICENSE`). T
 Recommended checks:
 
 1. Confirm with your syllabus / TA whether submitting to a **public GitHub repository** is allowed.  
-2. If anonymity is required, remove or anonymize identifiable metadata (names inside `LICENSE`, README links, etc.).  
+2. If anonymity is required, remove or anonymize identifiable metadata (names inside `LICENSE`, `pyproject.toml`, README links, etc.).  
 3. Follow your institution’s rules on AI-assisted tooling disclosure (if applicable).
 
 Nothing in this file overrides your faculty’s formal requirements.
