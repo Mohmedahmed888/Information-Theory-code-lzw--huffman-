@@ -1,134 +1,241 @@
-# Information Theory — LZW & Huffman Compression
+<p align="center">
+  <strong>Lossless Compression — Huffman &amp; LZW</strong><br/>
+  <sub>Information Theory · From-scratch implementations · GUI + Web + Tests</sub>
+</p>
 
-Lossless **Huffman coding** and **LZW (Lempel–Ziv–Welch)** implementations from scratch, with a **Tkinter GUI**, a **Flask web UI**, entropy analysis, and an optional **binary symmetric channel + Hamming(7,4)** bonus demo.
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white" alt="Python 3.8+"/>
+  <img src="https://img.shields.io/badge/flask-3.x-green?logo=flask&logoColor=white" alt="Flask"/>
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"/>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform"/>
+</p>
 
-**Course context:** ECU — Information Theory & Data Compression · Spring 2026
+---
+
+## Overview
+
+This repository provides **educational, from-scratch** implementations of:
+
+- **Huffman coding** — prefix-free variable-length codes built with a min-heap; the **code tree is serialized in the `.huf` file header** so decompression is independent of prior runs.
+- **LZW (Lempel–Ziv–Welch)** — dictionary-based compression using **16-bit codes**; the dictionary is **not stored in the file** and is reconstructed during decompression (`.lzw`).
+
+Supporting components include **Shannon entropy** analysis (`utils/entropy.py`), a **Tkinter desktop UI**, a **Flask + single-page web UI**, and an optional **Binary Symmetric Channel (BSC) + Hamming(7,4)** demonstration (`algorithms/channel.py`).
+
+**Institutional context:** ECU — *Information Theory &amp; Data Compression* · Spring 2026  
+
+**Repository:** [github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-](https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-)
+
+---
+
+## Table of contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Web API](#web-api)
+- [File formats](#file-formats)
+- [Project layout](#project-layout)
+- [Testing](#testing)
+- [Notes on compression limits](#notes-on-compression-limits)
+- [Security (development server)](#security-development-server)
+- [License](#license)
 
 ---
 
 ## Features
 
-| Area | Description |
-|------|-------------|
-| **Huffman** | Min-heap tree, variable-length prefix codes; tree stored in `.huf` file header |
-| **LZW** | 16-bit fixed codes; dictionary rebuilt on decompress; `.lzw` format |
-| **Entropy** | Shannon \(H(X)\) in bits per byte (symbol) |
-| **GUI** | `gui/app.py` — file pick, compress/decompress, metrics |
-| **Web** | `app.py` — upload, API, comparison mode, download outputs |
-| **Bonus** | BSC bit flips + Hamming(7,4) encode/decode pipeline |
+| Component | Description |
+|-----------|-------------|
+| **Huffman** | Frequency table → tree → bitstream; **lossless** round-trip via embedded tree |
+| **LZW** | Classic encode/decode loop; **KwKwK** edge case handled in decoder |
+| **Entropy** | Empirical Shannon entropy **H(X)** in bits per byte |
+| **GUI** | `gui/app.py` — browse file, compress/decompress, metrics |
+| **Web** | `app.py` — upload, compare algorithms, download results |
+| **Bonus channel** | Hamming encode → BSC noise → decode/correct → optional decompress smoke test |
 
 ---
 
-## Requirements
+## Tech stack
 
-- **Python 3.8+**
-- **Algorithms / GUI / tests:** standard library only  
-- **Web app:** [Flask](https://flask.palletsprojects.org/) (install from `requirements.txt`)
+| Layer | Technology |
+|-------|---------------|
+| Language | Python 3.8+ |
+| Algorithms | Standard library (`heapq`, `struct`, `collections`, …) |
+| Web | Flask 3.x (see `requirements.txt`) |
+| Desktop UI | Tkinter (stdlib) |
+| Frontend | Static HTML/CSS/JS under `web/` |
+
+---
+
+## Installation
+
+### 1. Clone
 
 ```bash
+git clone https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-.git
+cd Information-Theory-code-lzw--huffman-
+```
+
+### 2. Virtual environment (recommended)
+
+**Windows (PowerShell)**
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+**macOS / Linux**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+The **web app** requires Flask. The **GUI** and **test suite** run with the standard library only once Python is installed.
+
 ---
 
-## Quick start
+## Usage
 
-### Windows (`run.bat`)
+### Option A — Windows launcher
 
 Double-click **`run.bat`** and choose:
 
-1. **Web** — Flask server at `http://localhost:5000`  
-2. **GUI** — Tkinter desktop app  
-3. **Tests** — automated suite  
+1. Web (Flask) — default `http://127.0.0.1:5000`  
+2. GUI (Tkinter)  
+3. Automated tests  
 
-### Command line
+### Option B — Command line
 
 ```bash
-# Clone
-git clone https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-.git
-cd Information-Theory-code-lzw--huffman-
-
-# Web
-pip install -r requirements.txt
+# Web UI
 python app.py
-# Open http://localhost:5000
+# Open http://127.0.0.1:5000 in your browser
 
-# GUI
+# Desktop GUI
 python gui/app.py
 
-# Tests
+# Full test suite
 python test_all.py
 ```
 
-### Compress / decompress rules (web & API)
+### Compress / decompress rules
 
-- **Compress:** any file → output `originalname.huf` or `originalname.lzw`  
-- **Decompress:** upload the **`.huf` or `.lzw`** file produced by this project (not plain `.txt`)
+| Mode | Input | Output |
+|------|--------|--------|
+| **Compress** | Any file | `originalname.huf` (Huffman) or `originalname.lzw` (LZW) |
+| **Decompress** | `.huf` or `.lzw` **produced by this project** | Reconstructed file (original extension preserved when possible) |
+
+Plain text (e.g. `.txt`) is **not** a valid decompress input unless it was compressed by this tool first.
 
 ---
 
-## Repository layout
+## Web API
+
+Base URL while the server runs locally: `http://127.0.0.1:5000`
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/` | Serve `web/index.html` |
+| `GET` | `/ecu-logo.png` | Logo asset |
+| `POST` | `/api/compress` | Multipart form: `file`, `algorithm` (`huffman` \| `lzw`), `mode` (`compress` \| `decompress`), optional `use_channel`, `ber` |
+| `GET` | `/api/download/<filename>` | Download file from server `output/` |
+| `GET` | `/api/ping` | Development: change notification for optional live reload in the SPA |
+
+Responses are JSON (except downloads and static files). Typical success fields include `ratio`, `saved`, `time_ms`, `memory_kb`, and `entropy`.
+
+---
+
+## File formats
+
+### Huffman (`.huf`)
+
+Binary layout (big-endian integers where applicable):
+
+1. Original size (4 bytes)  
+2. Tree bit length (4 bytes)  
+3. Tree byte length (4 bytes)  
+4. Serialized tree (`tree byte length` bytes)  
+5. Padding bit count for payload (4 bytes)  
+6. Encoded payload (remaining bytes)
+
+### LZW (`.lzw`)
+
+1. Original size (4 bytes)  
+2. Number of codes (4 bytes)  
+3. Codes as **16-bit** big-endian shorts (`num_codes × 2` bytes)
+
+---
+
+## Project layout
 
 ```
 .
-├── app.py                 # Flask web server + /api/compress, /api/download
-├── run.bat               # Windows launcher (web / gui / tests)
-├── requirements.txt      # Flask (web only)
-├── test_all.py           # Automated Huffman/LZW/channel tests
-├── create_test_files.py  # Helper to generate sample inputs
+├── app.py                 # Flask application entry
+├── run.bat                # Windows menu launcher
+├── requirements.txt       # Web dependency pin (Flask)
+├── LICENSE                # MIT
+├── test_all.py            # Automated tests
+├── create_test_files.py   # Sample data helper
 ├── algorithms/
-│   ├── __init__.py
-│   ├── huffman.py        # Huffman compress/decompress (.huf)
-│   ├── lzw.py             # LZW compress/decompress (.lzw)
-│   └── channel.py         # Hamming + BSC bonus
+│   ├── huffman.py         # Huffman codec
+│   ├── lzw.py             # LZW codec
+│   └── channel.py        # Hamming + BSC bonus
 ├── utils/
-│   └── entropy.py        # Shannon entropy & file stats
+│   └── entropy.py         # Entropy & file stats
 ├── gui/
-│   └── app.py            # Tkinter GUI
+│   └── app.py             # Tkinter UI
 ├── web/
-│   ├── index.html        # Single-page UI
+│   ├── index.html
 │   └── ecu-logo.png
-├── test_files/           # Sample inputs (e.g. demo text)
-├── output/               # Generated outputs (gitignored if present)
-└── uploads/             # Web uploads (gitignored if present)
+└── test_files/            # Committed samples; channel temp files gitignored
 ```
 
----
-
-## Design notes
-
-### Huffman — self-contained `.huf` files  
-
-The Huffman tree is **serialized into the compressed file header** (pre-order bit encoding). Decompression **does not** need the original frequencies or a separate side file.
-
-### LZW — no dictionary on disk  
-
-The dictionary is **rebuilt from the code stream** during decompression (standard LZW property).
-
-### Bonus — Hamming(7,4)  
-
-Each input byte → two nibbles → two 7-bit codewords. The simulator flips bits with probability BER; single-bit errors per codeword can be corrected. High BER may cause uncorrectable multi-bit errors.
+Runtime directories `output/` and `uploads/` are created by the application and listed in `.gitignore`.
 
 ---
 
-## Test results (typical datasets)
+## Testing
 
-| File type | Huffman ratio | LZW ratio | Entropy H(X) |
-|-----------|---------------|-----------|--------------|
-| Text (~33 KB) | ~1.79× | ~3.78× | ~4.40 bits |
-| Repetitive (~10 KB) | ~7.88× | ~24.63× | ~1.00 bits |
-| Pseudorandom (~10 KB) | ~1× | &lt;1× expansion | ~7.98 bits |
+```bash
+python test_all.py
+```
 
-High-entropy data is hard to compress (Shannon’s source coding theorem).
+The suite exercises **compress → decompress** round-trips (integrity via hashing), reports ratios and timing, and includes **channel bonus** scenarios where configured.
 
 ---
 
-## Author / repo
+## Notes on compression limits
 
-- **GitHub:** [Mohmedahmed888/Information-Theory-code-lzw--huffman-](https://github.com/Mohmedahmed888/Information-Theory-code-lzw--huffman-)
+Reference behaviour on representative datasets (see `test_all.py` / `test_files/`):
+
+| Dataset profile | Typical behaviour |
+|----------------|-------------------|
+| Natural text | Moderate redundancy — both algorithms shrink the file |
+| Highly repetitive input | Strong redundancy — large compression gains |
+| High-entropy (pseudo-random) | Little to no redundancy — **compression may expand** output; this aligns with Shannon’s source coding theorem |
+
+---
+
+## Security (development server)
+
+Flask’s built-in server is intended for **local development and coursework demos**. Do **not** expose it to the public internet without a production WSGI server, reverse proxy, and hardening.
 
 ---
 
 ## License
 
-Educational use — adjust as needed for your course submission policy.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE).
+
+---
+
+<p align="center">
+  Built for coursework in <strong>Information Theory &amp; Data Compression</strong>
+</p>

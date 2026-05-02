@@ -1,53 +1,64 @@
 @echo off
 setlocal EnableExtensions
-
-REM ECU Compression Tool launcher (Windows)
-REM - Web app (Flask):  http://localhost:5000
-REM - GUI app (Tkinter)
-REM - Tests (CLI)
-
 cd /d "%~dp0"
 
-echo.
-echo ================================
-echo   ECU Compression Tool (Run)
-echo ================================
-echo   [1] Run WEB app (Flask)
-echo   [2] Run GUI app (Tkinter)
-echo   [3] Run test suite (CLI)
-echo   [4] Exit
-echo.
+title Information Theory — Huffman & LZW Toolkit
 
-set /p choice=Choose an option (1-4): 
+REM Prefer project venv if present (pip install -r requirements.txt in .venv)
+set "PYEXE=python"
+if exist "%~dp0.venv\Scripts\python.exe" set "PYEXE=%~dp0.venv\Scripts\python.exe"
+
+where %PYEXE% >nul 2>&1
+if errorlevel 1 (
+  echo [ERROR] Python not found. Install Python 3.8+ and ensure it is on PATH.
+  echo Tip:   python -m venv .venv
+  echo        .venv\Scripts\activate
+  echo        pip install -r requirements.txt
+  pause
+  exit /b 1
+)
+
+:menu
+cls
+echo.
+echo  ============================================================
+echo    Huffman ^& LZW — Compression Toolkit
+echo  ============================================================
+echo    [1]  Web app  (Flask)  ^> http://127.0.0.1:5000
+echo    [2]  Desktop GUI (Tkinter^)
+echo    [3]  Run automated tests
+echo    [4]  Exit
+echo  ============================================================
+echo.
+set "choice="
+set /p choice=  Select option (1-4): 
 
 if "%choice%"=="1" goto web
 if "%choice%"=="2" goto gui
 if "%choice%"=="3" goto tests
-goto end
+if "%choice%"=="4" goto bye
+goto menu
 
 :web
 echo.
-echo Starting WEB server...
-echo Open this in your browser: http://localhost:5000
+echo  Starting Flask (development server). Press Ctrl+C to stop.
+echo  URL: http://127.0.0.1:5000
 echo.
-python app.py
-goto end
+%PYEXE% app.py
+goto menu
 
 :gui
 echo.
-echo Starting GUI...
-echo.
-python gui\app.py
-goto end
+%PYEXE% gui\app.py
+goto menu
 
 :tests
 echo.
-echo Running tests...
+%PYEXE% test_all.py
 echo.
-python test_all.py
-goto end
+pause
+goto menu
 
-:end
-echo.
-echo Done.
+:bye
+echo  Goodbye.
 endlocal

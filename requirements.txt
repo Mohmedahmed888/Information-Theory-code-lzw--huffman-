@@ -1,2 +1,14 @@
-# Web UI only — core algorithms use the Python standard library
-flask>=3.0,<4
+# =============================================================================
+# Dependencies — Information Theory Compression Toolkit
+# =============================================================================
+#
+# Core algorithms (Huffman, LZW, entropy, channel simulation) use the Python
+# standard library only.
+#
+# Install web dependencies:
+#   pip install -r requirements.txt
+#
+# Pin strategy: compatible release for Flask 3.x series.
+# =============================================================================
+
+flask>=3.0,<4.0
